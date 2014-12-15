@@ -1,6 +1,6 @@
 linode-netint
 =============
-[![GoDoc](https://img.shields.io/badge/netint-GoDoc-blue.svg)](https://godoc.org/github.com/theckman/linode-netint)
+[![GoDoc](https://img.shields.io/badge/netint-GoDoc-blue.svg?style=flat)](https://godoc.org/github.com/theckman/linode-netint)
 
 This is the Linode `netint` API client. This uses the Linode network internals undocumented API.
 
@@ -30,5 +30,7 @@ func main() {
 
 	// show results for Atlanta <=> Dallas from Atlanta
 	fmt.Printf("To Dallas: RTT: %d, Loss: %d, Jitter: %d\n", a.Dallas.RTT, a.Dallas.Loss, a.Dallas.Jitter)
+
+	// Output To Dallas: RTT: 35, Loss: 0, Jitter: 0
 }
 ```
