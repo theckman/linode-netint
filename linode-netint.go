@@ -23,18 +23,36 @@ import (
 	"strconv"
 )
 
-// BASE_URLF is the base URL with a format specifier for the abbreviation
-const BASE_URLF = "http://netint-%v.linode.com/ping/samples"
-
 const (
-	DALLAS  = "dal"   // Dallas abbreviation
-	FREMONT = "fmt"   // Fremont abbreviation
-	ATLANTA = "atl"   // Atlanta abbreviation
-	NEWARK  = "nwk"   // Newark abbreviation
-	LONDON  = "lon"   // London abbreviation
-	TOKYO   = "tok"   // Tokyo abbreviation
-	VERSION = "0.0.1" // Library version
+	// BaseURL is the base URL with a format specifier
+	// for the datacenter's abbreviation
+	BaseURL = "http://netint-%v.linode.com/ping/samples"
+
+	// Version is the version, man...
+	Version = "0.0.2"
 )
+
+type dc struct {
+	name string
+	abbr string
+}
+
+// datacenters is a struct of different datacenter details
+var datacenters = struct {
+	dallas  *dc
+	fremont *dc
+	atlanta *dc
+	newark  *dc
+	london  *dc
+	tokyo   *dc
+}{
+	&dc{name: "dallas", abbr: "dal"},
+	&dc{name: "fremont", abbr: "fmt"},
+	&dc{name: "atlant", abbr: "atl"},
+	&dc{name: "newark", abbr: "nwk"},
+	&dc{name: "london", abbr: "lon"},
+	&dc{name: "tokyo", abbr: "tok"},
+}
 
 // used for parsing the JSON response
 type samples struct {
@@ -69,10 +87,39 @@ type Overview struct {
 // Regions is a function that returns a slice of strings that is the
 // collection of Linode regions.
 func Regions() []string {
-	return []string{"dallas", "fremont", "atlanta", "newark", "london", "tokyo"}
+	return []string{
+		datacenters.dallas.name,
+		datacenters.fremont.name,
+		datacenters.atlanta.name,
+		datacenters.newark.name,
+		datacenters.london.name,
+		datacenters.tokyo.name,
+	}
 }
 
-// AllSamples is a function to return all overviews.
+// Abbr is a fcuntion to obtain the shortened version of a datacenter's
+// name. 'dc' is the full name of the datacenter (e.g., "dallas"). Returns
+// an empty string if given an unknown datacenter.
+func Abbr(dc string) string {
+	switch dc {
+	case datacenters.dallas.name:
+		return datacenters.dallas.abbr
+	case datacenters.fremont.name:
+		return datacenters.fremont.abbr
+	case datacenters.atlanta.name:
+		return datacenters.atlanta.abbr
+	case datacenters.newark.name:
+		return datacenters.newark.abbr
+	case datacenters.london.name:
+		return datacenters.london.abbr
+	case datacenters.tokyo.name:
+		return datacenters.tokyo.abbr
+	default:
+		return ""
+	}
+}
+
+// AllOverviews is a function to return all overviews.
 // It's a map of *Overview instances with the lowercase name
 // of the region as the key.
 func AllOverviews() (map[string]*Overview, error) {
@@ -81,7 +128,7 @@ func AllOverviews() (map[string]*Overview, error) {
 	// loop over each region and
 	// populate its overview
 	for _, d := range Regions() {
-		o, err := getOverview(d)
+		o, err := GetOverview(d)
 
 		if err != nil {
 			return nil, err
@@ -95,54 +142,51 @@ func AllOverviews() (map[string]*Overview, error) {
 
 // Dallas is a function to get an overview of the Dallas region.
 func Dallas() (*Overview, error) {
-	return getOverview("dallas")
+	return GetOverview("dallas")
 }
 
 // Fremont is a function to get an overview of the Fremont region.
 func Fremont() (*Overview, error) {
-	return getOverview("fremont")
+	return GetOverview("fremont")
 }
 
 // Atlanta is a function to get an overview of the Atlanta region.
 func Atlanta() (*Overview, error) {
-	return getOverview("atlanta")
+	return GetOverview("atlanta")
 }
 
 // Newark is a function to get an overview of the Newark region.
 func Newark() (*Overview, error) {
-	return getOverview("newark")
+	return GetOverview("newark")
 }
 
 // London is a function to get an overview of the London region.
 func London() (*Overview, error) {
-	return getOverview("london")
+	return GetOverview("london")
 }
 
 // Tokyo is a function to get an overview of the Tokyo region.
 func Tokyo() (*Overview, error) {
-	return getOverview("tokyo")
+	return GetOverview("tokyo")
 }
 
-func getOverview(r string) (o *Overview, err error) {
+// GetOverview is a function to get an overview of a single datacenter with
+// 'dc' being the datacenter name (e.g., "dallas")
+func GetOverview(dc string) (o *Overview, err error) {
 	var u string
 
 	// determine the URL based on the region
 	// if the region is unknown return error
-	switch r {
-	case "dallas":
-		u = url(DALLAS)
-	case "fremont":
-		u = url(FREMONT)
-	case "atlanta":
-		u = url(ATLANTA)
-	case "newark":
-		u = url(NEWARK)
-	case "london":
-		u = url(LONDON)
-	case "tokyo":
-		u = url(TOKYO)
+	switch dc {
+	case "testdatacenter":
+		// for testing purposes only
+		u = "http://www.mocky.io/v2/548fd4750b9c75fd02437812"
 	default:
-		return nil, fmt.Errorf("'%v' is not a valid datacenter", r)
+		dcAbbr := Abbr(dc)
+		if dcAbbr == "" {
+			return nil, fmt.Errorf("'%v' is not a valid datacenter\n", dc)
+		}
+		u = url(dcAbbr)
 	}
 
 	body, err := responseBody(u)
@@ -165,13 +209,13 @@ func getOverview(r string) (o *Overview, err error) {
 		return nil, err
 	}
 
-	o.Name = r
+	o.Name = dc
 
 	return
 }
 
 func url(abbr string) string {
-	return fmt.Sprintf(BASE_URLF, abbr)
+	return fmt.Sprintf(BaseURL, abbr)
 }
 
 func responseBody(url string) ([]byte, error) {
@@ -184,8 +228,8 @@ func responseBody(url string) ([]byte, error) {
 	}
 
 	// we set a user agent so Linode has an idea of where requests are being generated from
-	// LinodeNetInt/<VERSION> (go<VER> net/http)
-	req.Header.Add("User-Agent", fmt.Sprintf("LinodeNetInt/%v (%v net/http)", VERSION, runtime.Version()))
+	// LinodeNetInt/<Version> (go<runtime.Version()> net/http)
+	req.Header.Add("User-Agent", fmt.Sprintf("LinodeNetInt/%v (%v net/http)", Version, runtime.Version()))
 
 	// execute the request
 	resp, err := httpc.Do(req)
