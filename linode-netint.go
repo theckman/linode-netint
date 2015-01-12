@@ -186,7 +186,7 @@ func GetOverview(dc string) (o *Overview, err error) {
 		if dcAbbr == "" {
 			return nil, fmt.Errorf("'%v' is not a valid datacenter\n", dc)
 		}
-		u = url(dcAbbr)
+		u = fmt.Sprintf(BaseURL, dcAbbr)
 	}
 
 	body, err := responseBody(u)
@@ -212,10 +212,6 @@ func GetOverview(dc string) (o *Overview, err error) {
 	o.Name = dc
 
 	return
-}
-
-func url(abbr string) string {
-	return fmt.Sprintf(BaseURL, abbr)
 }
 
 func responseBody(url string) ([]byte, error) {
