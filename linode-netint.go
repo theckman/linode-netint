@@ -39,12 +39,14 @@ type dc struct {
 
 // datacenters is a struct of different datacenter details
 var datacenters = struct {
-	dallas  *dc
-	fremont *dc
-	atlanta *dc
-	newark  *dc
-	london  *dc
-	tokyo   *dc
+	dallas    *dc
+	fremont   *dc
+	atlanta   *dc
+	newark    *dc
+	london    *dc
+	tokyo     *dc
+	singapore *dc
+	frankfurt *dc
 }{
 	&dc{name: "dallas", abbr: "dal"},
 	&dc{name: "fremont", abbr: "fmt"},
@@ -52,16 +54,20 @@ var datacenters = struct {
 	&dc{name: "newark", abbr: "nwk"},
 	&dc{name: "london", abbr: "lon"},
 	&dc{name: "tokyo", abbr: "tok"},
+	&dc{name: "singapore", abbr: "sgp"},
+	&dc{name: "frankfurt", abbr: "fra"},
 }
 
 // used for parsing the JSON response
 type samples struct {
-	Dallas  [][]interface{} `json:"linode-dallas"`
-	Fremont [][]interface{} `json:"linode-fremont"`
-	Atlanta [][]interface{} `json:"linode-atlanta"`
-	Newark  [][]interface{} `json:"linode-newark"`
-	London  [][]interface{} `json:"linode-london"`
-	Tokyo   [][]interface{} `json:"linode-tokyo"`
+	Dallas    [][]interface{} `json:"linode-dallas"`
+	Fremont   [][]interface{} `json:"linode-fremont"`
+	Atlanta   [][]interface{} `json:"linode-atlanta"`
+	Newark    [][]interface{} `json:"linode-newark"`
+	London    [][]interface{} `json:"linode-london"`
+	Tokyo     [][]interface{} `json:"linode-tokyo"`
+	Singapore [][]interface{} `json:"linode-singapore"`
+	Frankfurt [][]interface{} `json:"linode-frankfurt"`
 }
 
 // Sample is a single result for a point-to-point measurement.
@@ -75,13 +81,15 @@ type Sample struct {
 // Overview is the entire view a single region has to the rest of the regions.
 // It consists of one *Sample for each Region
 type Overview struct {
-	Name    string
-	Dallas  *Sample
-	Fremont *Sample
-	Atlanta *Sample
-	Newark  *Sample
-	London  *Sample
-	Tokyo   *Sample
+	Name      string
+	Dallas    *Sample
+	Fremont   *Sample
+	Atlanta   *Sample
+	Newark    *Sample
+	London    *Sample
+	Tokyo     *Sample
+	Singapore *Sample
+	Frankfurt *Sample
 }
 
 // Regions is a function that returns a slice of strings that is the
@@ -94,6 +102,8 @@ func Regions() []string {
 		datacenters.newark.name,
 		datacenters.london.name,
 		datacenters.tokyo.name,
+		datacenters.singapore.name,
+		datacenters.frankfurt.name,
 	}
 }
 
@@ -114,6 +124,10 @@ func Abbr(dc string) string {
 		return datacenters.london.abbr
 	case datacenters.tokyo.name:
 		return datacenters.tokyo.abbr
+	case datacenters.singapore.name:
+		return datacenters.singapore.abbr
+	case datacenters.frankfurt.name:
+		return datacenters.frankfurt.abbr
 	default:
 		return ""
 	}
@@ -168,6 +182,16 @@ func London() (*Overview, error) {
 // Tokyo is a function to get an overview of the Tokyo region.
 func Tokyo() (*Overview, error) {
 	return GetOverview("tokyo")
+}
+
+// Singapore is a function to get an overview of the Singapore region.
+func Singapore() (*Overview, error) {
+	return GetOverview("singapore")
+}
+
+// Frankfurt is a function to get an overview of the Frankfurt region.
+func Frankfurt() (*Overview, error) {
+	return GetOverview("frankfurt")
 }
 
 // GetOverview is a function to get an overview of a single datacenter with
@@ -280,6 +304,18 @@ func buildOverview(s *samples) (o *Overview, err error) {
 	}
 
 	o.Tokyo, err = pullSample(s.Tokyo)
+
+	if err != nil {
+		return nil, err
+	}
+
+	o.Singapore, err = pullSample(s.Singapore)
+
+	if err != nil {
+		return nil, err
+	}
+
+	o.Frankfurt, err = pullSample(s.Frankfurt)
 
 	if err != nil {
 		return nil, err
